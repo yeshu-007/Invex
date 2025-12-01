@@ -52,17 +52,23 @@ router.post('/signup', async (req, res) => {
 // Handle login request
 router.post('/login', async (req, res) => {
   try {
-    // Get email and password from request
-    const email = req.body.email;
+    // Get userId and password from request
+    const userId = req.body.userId;
     const password = req.body.password;
 
     // Check if both fields are provided
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
+    if (!userId || !password) {
+      return res.status(400).json({ message: 'User ID and password are required' });
     }
 
-    // Find user by email
-    const user = await User.findOne({ email: email });
+    // Find user by userId, username, or email (flexible login)
+    const user = await User.findOne({ 
+      $or: [
+        { userId: userId },
+        { username: userId },
+        { email: userId }
+      ]
+    });
 
     // If user not found
     if (!user) {
