@@ -16,11 +16,14 @@ const Procurement = () => {
           'Authorization': `Bearer ${token}`
         }
       });
+      
       if (response.ok) {
         const data = await response.json();
-        setRequests(data);
+        // Ensure data is an array
+        const requestsArray = Array.isArray(data) ? data : [];
+        setRequests(requestsArray);
       } else {
-        // Use mock data
+        // Use mock data on error
         setRequests([
           {
             _id: '1',
@@ -54,12 +57,16 @@ const Procurement = () => {
       }
     } catch (error) {
       console.error('Error fetching requests:', error);
+      // Set empty array on error to prevent crashes
+      setRequests([]);
     }
   };
 
-  const totalRequests = requests.length;
-  const pendingRequests = requests.filter(r => r.status === 'PENDING').length;
-  const totalUnits = requests.reduce((sum, r) => sum + r.quantity, 0);
+  // Ensure requests is always an array
+  const requestsArray = Array.isArray(requests) ? requests : [];
+  const totalRequests = requestsArray.length;
+  const pendingRequests = requestsArray.filter(r => r && r.status === 'PENDING').length;
+  const totalUnits = requestsArray.reduce((sum, r) => sum + (r?.quantity || 0), 0);
 
   const getPriorityClass = (priority) => {
     switch (priority) {
@@ -94,23 +101,31 @@ const Procurement = () => {
             </tr>
           </thead>
           <tbody>
-            {requests.map(request => (
-              <tr key={request._id}>
-                <td>{request.itemName}</td>
-                <td>{request.quantity} units</td>
-                <td>
-                  <span className={`priority-badge ${getPriorityClass(request.priority)}`}>
-                    {request.priority}
-                  </span>
-                </td>
-                <td>
-                  <span className="status-badge pending">{request.status}</span>
-                </td>
-                <td>
-                  <button className="view-details-btn">View Details</button>
+            {requestsArray.length > 0 ? (
+              requestsArray.map(request => (
+                <tr key={request._id || request.componentId}>
+                  <td>{request.itemName || request.name || 'N/A'}</td>
+                  <td>{request.quantity || 0} units</td>
+                  <td>
+                    <span className={`priority-badge ${getPriorityClass(request.priority)}`}>
+                      {request.priority || 'MEDIUM'}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="status-badge pending">{request.status || 'PENDING'}</span>
+                  </td>
+                  <td>
+                    <button className="view-details-btn">View Details</button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="5" style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                  No procurement requests found
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

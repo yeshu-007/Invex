@@ -52,7 +52,7 @@ router.post('/components', async (req, res) => {
 // Get all components
 router.get('/components', async (req, res) => {
   try {
-    const components = await Component.find().select('componentId name');
+    const components = await Component.find().select('componentId name category description totalQuantity availableQuantity threshold tags');
     res.json(components);
   } catch (error) {
     console.error('Get components error:', error);
@@ -138,18 +138,21 @@ router.delete('/components/:componentId', async (req, res) => {
 // GET /api/admin/procurement
 router.get('/procurement', async (req, res) => {
   try {
-    // Simple analysis: components with availableQuantity < threshold (default < 5)
+    // Simple analysis: components with availableQuantity <= threshold (default <= 5)
     const lowStockComponents = await Component.find({
       $expr: { $lte: ['$availableQuantity', '$threshold'] }
     });
 
-    const generated = lowStockComponents.map(comp => ({
+    const requests = lowStockComponents.map(comp => ({
+      _id: comp._id,
       componentId: comp.componentId,
-      requiredQuantity: comp.threshold - comp.availableQuantity + 5 // Add buffer
+      itemName: comp.name,
+      quantity: Math.max(comp.threshold - comp.availableQuantity + 5, 1), // Add buffer, minimum 1
+      priority: comp.availableQuantity <= 2 ? 'HIGH' : comp.availableQuantity <= comp.threshold ? 'MEDIUM' : 'LOW',
+      status: 'PENDING'
     }));
 
-    // NOTE: In a real app, you could send this data to Gemini for smarter suggestions.
-    res.json({ generated: generated });
+    res.json(requests);
   } catch (error) {
     console.error('Procurement generate error:', error);
     res.status(500).json({ message: 'Server error' });

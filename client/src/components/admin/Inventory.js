@@ -17,11 +17,24 @@ const Inventory = () => {
           'Authorization': `Bearer ${token}`
         }
       });
+      
       if (response.ok) {
         const data = await response.json();
-        setComponents(data);
+        // Ensure data is an array and map to component format
+        const componentsArray = Array.isArray(data) ? data : [];
+        const mappedComponents = componentsArray.map(comp => ({
+          _id: comp._id || comp.componentId,
+          componentId: comp.componentId,
+          name: comp.name || '',
+          description: comp.description || '',
+          category: comp.category || '',
+          tags: Array.isArray(comp.tags) ? comp.tags : [],
+          stock: comp.availableQuantity || 0,
+          totalStock: comp.totalQuantity || 0
+        }));
+        setComponents(mappedComponents);
       } else {
-        // Use mock data
+        // Use mock data on error
         setComponents([
           {
             _id: '1',
@@ -81,13 +94,17 @@ const Inventory = () => {
       }
     } catch (error) {
       console.error('Error fetching components:', error);
+      // Set empty array on error to prevent crashes
+      setComponents([]);
     }
   };
 
-  const filteredComponents = components.filter(comp =>
-    comp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    comp.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredComponents = Array.isArray(components) ? components.filter(comp =>
+    comp && comp.name && (
+      comp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (Array.isArray(comp.tags) && comp.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())))
+    )
+  ) : [];
 
   return (
     <div className="inventory">
@@ -130,35 +147,47 @@ const Inventory = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredComponents.map(component => (
-              <tr key={component._id}>
-                <td>
-                  <div className="item-name">{component.name}</div>
-                  <div className="item-description">{component.description}</div>
-                </td>
-                <td>
-                  <span className="category-tag">{component.category}</span>
-                </td>
-                <td>
-                  <span className={`stock-value ${component.stock < 10 ? 'low' : ''}`}>
-                    {component.stock}/{component.totalStock}
-                  </span>
-                </td>
-                <td>
-                  <div className="tags-list">
-                    {component.tags.map((tag, idx) => (
-                      <span key={idx} className="tag">{tag}</span>
-                    ))}
-                  </div>
-                </td>
-                <td>
-                  <div className="action-buttons">
-                    <button className="action-btn edit">✏️</button>
-                    <button className="action-btn delete">🗑️</button>
-                  </div>
+            {filteredComponents.length > 0 ? (
+              filteredComponents.map(component => (
+                <tr key={component._id || component.componentId}>
+                  <td>
+                    <div className="item-name">{component.name || 'N/A'}</div>
+                    <div className="item-description">{component.description || ''}</div>
+                  </td>
+                  <td>
+                    <span className="category-tag">{component.category || 'N/A'}</span>
+                  </td>
+                  <td>
+                    <span className={`stock-value ${(component.stock || 0) < 10 ? 'low' : ''}`}>
+                      {component.stock || 0}/{component.totalStock || 0}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="tags-list">
+                      {Array.isArray(component.tags) && component.tags.length > 0 ? (
+                        component.tags.map((tag, idx) => (
+                          <span key={idx} className="tag">{tag}</span>
+                        ))
+                      ) : (
+                        <span className="tag">No tags</span>
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    <div className="action-buttons">
+                      <button className="action-btn edit">✏️</button>
+                      <button className="action-btn delete">🗑️</button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="5" style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                  No components found
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

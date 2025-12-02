@@ -7,7 +7,7 @@ const router = express.Router();
 // GET /api/components/
 router.get('/', async (req, res) => {
   try {
-    const components = await Component.find().select('componentId name category tags availableQuantity');
+    const components = await Component.find().select('componentId name category description tags totalQuantity availableQuantity');
     res.json(components);
   } catch (error) {
     console.error('Get components error:', error);
