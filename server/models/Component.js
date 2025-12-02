@@ -70,9 +70,8 @@ const componentSchema = new mongoose.Schema({
 });
 
 // Update updatedAt before saving
-componentSchema.pre('save', function(next) {
+componentSchema.pre('save', async function() {
   this.updatedAt = Date.now();
-  next();
 });
 
 module.exports = mongoose.model('Component', componentSchema);
