@@ -1,0 +1,148 @@
+import React, { useState, useEffect } from 'react';
+import './Procurement.css';
+
+const Procurement = () => {
+  const [requests, setRequests] = useState([]);
+
+  useEffect(() => {
+    fetchRequests();
+  }, []);
+
+  const fetchRequests = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5001/api/admin/procurement', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setRequests(data);
+      } else {
+        // Use mock data
+        setRequests([
+          {
+            _id: '1',
+            itemName: 'Raspberry Pi 4',
+            quantity: 6,
+            priority: 'MEDIUM',
+            status: 'PENDING'
+          },
+          {
+            _id: '2',
+            itemName: 'SG90 Micro Servo',
+            quantity: 16,
+            priority: 'MEDIUM',
+            status: 'PENDING'
+          },
+          {
+            _id: '3',
+            itemName: 'ESP32 DevKit',
+            quantity: 10,
+            priority: 'MEDIUM',
+            status: 'PENDING'
+          },
+          {
+            _id: '4',
+            itemName: 'Jumper Wires Set',
+            quantity: 5,
+            priority: 'LOW',
+            status: 'PENDING'
+          }
+        ]);
+      }
+    } catch (error) {
+      console.error('Error fetching requests:', error);
+    }
+  };
+
+  const totalRequests = requests.length;
+  const pendingRequests = requests.filter(r => r.status === 'PENDING').length;
+  const totalUnits = requests.reduce((sum, r) => sum + r.quantity, 0);
+
+  const getPriorityClass = (priority) => {
+    switch (priority) {
+      case 'HIGH': return 'high';
+      case 'MEDIUM': return 'medium';
+      case 'LOW': return 'low';
+      default: return 'medium';
+    }
+  };
+
+  return (
+    <div className="procurement">
+      <div className="procurement-header">
+        <div>
+          <h1 className="procurement-title">Procurement List</h1>
+          <p className="procurement-subtitle">Manage component orders and requests</p>
+        </div>
+        <button className="btn-primary">
+          ➕ New Request
+        </button>
+      </div>
+
+      <div className="procurement-table-container">
+        <table className="procurement-table">
+          <thead>
+            <tr>
+              <th>Item Name</th>
+              <th>Quantity Needed</th>
+              <th>Priority</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {requests.map(request => (
+              <tr key={request._id}>
+                <td>{request.itemName}</td>
+                <td>{request.quantity} units</td>
+                <td>
+                  <span className={`priority-badge ${getPriorityClass(request.priority)}`}>
+                    {request.priority}
+                  </span>
+                </td>
+                <td>
+                  <span className="status-badge pending">{request.status}</span>
+                </td>
+                <td>
+                  <button className="view-details-btn">View Details</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="procurement-summary">
+        <div className="summary-card">
+          <div className="summary-icon">📄</div>
+          <div className="summary-content">
+            <div className="summary-label">Total Requests</div>
+            <div className="summary-value">{totalRequests}</div>
+          </div>
+        </div>
+
+        <div className="summary-card">
+          <div className="summary-icon">⏳</div>
+          <div className="summary-content">
+            <div className="summary-label">Pending</div>
+            <div className="summary-value">{pendingRequests}</div>
+          </div>
+        </div>
+
+        <div className="summary-card">
+          <div className="summary-icon">📦</div>
+          <div className="summary-content">
+            <div className="summary-label">Total Units</div>
+            <div className="summary-value">{totalUnits}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Procurement;
+

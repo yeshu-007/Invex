@@ -1,48 +1,82 @@
-import React, { useState, useEffect } from 'react';
-import Login from './components/Login';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import StudentView from './components/StudentView';
+import AdminLogin from './components/admin/AdminLogin';
+import AdminLayout from './components/admin/AdminLayout';
+import Dashboard from './components/admin/Dashboard';
+import Inventory from './components/admin/Inventory';
+import Procurement from './components/admin/Procurement';
+import SmartLab from './components/admin/SmartLab';
 import './App.css';
 
-function App() {
-  const [user, setUser] = useState(null);
-
-  // Check if user was already logged in when page loads
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    
-    if (token && savedUser) {
-      // User was logged in before, restore their info
-      setUser(JSON.parse(savedUser));
-    }
-  }, []);
-
-  // Called when login is successful
-  const handleLogin = (userData) => {
-    setUser(userData);
-  };
-
-  // Called when user clicks logout
-  const handleLogout = () => {
-    // Remove token and user info from storage
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null); // Clear user state
-  };
-
-  // If no user, show login page
-  if (!user) {
-    return <Login onLogin={handleLogin} />;
+// Protected Route component for admin pages
+const ProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  
+  if (!token || user.role !== 'admin') {
+    return <Navigate to="/admin/login" replace />;
   }
+  
+  return children;
+};
 
-  // If user is logged in, show welcome page
+function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>Welcome, {user.username || user.userId}!</h1>
-        <p>Role: {user.role}</p>
-        <button onClick={handleLogout}>Logout</button>
-      </header>
-    </div>
+    <Router>
+      <Routes>
+        {/* Student View - Default Route */}
+        <Route path="/" element={<StudentView />} />
+        
+        {/* Admin Login */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+        
+        {/* Admin Routes - Protected */}
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <Dashboard />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/inventory"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <Inventory />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/procurement"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <Procurement />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/smart-lab"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <SmartLab />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Redirect admin root to dashboard */}
+        <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+      </Routes>
+    </Router>
   );
 }
 

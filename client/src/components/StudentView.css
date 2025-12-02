@@ -1,0 +1,279 @@
+.student-view {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.sidebar {
+  width: 250px;
+  background-color: #1a1a2e;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px;
+  position: fixed;
+  height: 100vh;
+  left: 0;
+  top: 0;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: white;
+}
+
+.logo {
+  width: 40px;
+  height: 40px;
+  background-color: #667eea;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-icon {
+  color: white;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.logo-text {
+  color: white;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.admin-login-btn {
+  background-color: #667eea;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.3s;
+}
+
+.admin-login-btn:hover {
+  background-color: #5568d3;
+}
+
+.main-content {
+  margin-left: 250px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.top-bar {
+  background-color: white;
+  padding: 15px 30px;
+  display: flex;
+  justify-content: flex-end;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.scan-text {
+  color: #666;
+  font-size: 14px;
+}
+
+.content-area {
+  padding: 30px;
+  flex: 1;
+}
+
+.welcome-section {
+  margin-bottom: 30px;
+}
+
+.welcome-section h1 {
+  font-size: 32px;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.welcome-section p {
+  color: #666;
+  font-size: 16px;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  background-color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.search-icon {
+  margin-right: 10px;
+  color: #666;
+}
+
+.search-bar input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 16px;
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  background-color: white;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.filter-btn:hover {
+  background-color: #f0f0f0;
+}
+
+.filter-btn.active {
+  background-color: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+.guest-message {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 20px;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border-radius: 6px;
+}
+
+.components-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.component-card {
+  background-color: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.component-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.card-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.card-title {
+  font-size: 20px;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.card-description {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.card-category {
+  display: inline-block;
+  background-color: #f0f0f0;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.tag {
+  background-color: #f0f0f0;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: #666;
+}
+
+.card-availability {
+  color: #28a745;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+
+.card-availability.low {
+  color: #dc3545;
+}
+
+.borrow-btn {
+  width: 100%;
+  background-color: #667eea;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.3s;
+}
+
+.borrow-btn:hover {
+  background-color: #5568d3;
+}
+
+.chat-toggle {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #667eea;
+  color: white;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  transition: transform 0.2s;
+  z-index: 1000;
+}
+
+.chat-toggle:hover {
+  transform: scale(1.1);
+}
+
