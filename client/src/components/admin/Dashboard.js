@@ -1,129 +1,147 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import './Dashboard.css';
 import Icon from '../Icon';
+import { 
+  useGetComponentsQuery, 
+  useGetBorrowingRecordsQuery 
+} from '../../store/api/adminApi';
 
 const Dashboard = () => {
-  const [stats, setStats] = useState({
-    totalComponents: 0,
-    availableComponents: 0,
-    activeBorrows: 0,
-    overdueItems: 0,
-    lowStockAlerts: 0,
-    efficiencyRate: 0
-  });
+  // Use RTK Query hooks - automatically cached!
+  const { 
+    data: componentsData, 
+    isLoading: componentsLoading,
+    isError: componentsError 
+  } = useGetComponentsQuery();
 
-  const [categoryData, setCategoryData] = useState([]);
-  const [urgentActions, setUrgentActions] = useState({
-    overdueItems: [],
-    procurementAlerts: []
-  });
-  const [loading, setLoading] = useState(true);
+  const { 
+    data: borrowingRecordsData, 
+    isLoading: borrowingLoading,
+    isError: borrowingError 
+  } = useGetBorrowingRecordsQuery();
 
-  useEffect(() => {
-    // Fetch dashboard data from multiple API calls
-    fetchDashboardData();
-  }, []);
+  // Transform and calculate stats from cached data
+  const { stats, categoryData, urgentActions } = useMemo(() => {
+    const components = Array.isArray(componentsData) ? componentsData : [];
+    const borrowingRecords = Array.isArray(borrowingRecordsData) ? borrowingRecordsData : [];
 
-  const fetchDashboardData = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      
-      // Fetch components and borrowing records in parallel
-      const [componentsResponse, borrowingRecordsResponse] = await Promise.all([
-        fetch('http://localhost:5001/api/admin/components', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }),
-        fetch('http://localhost:5001/api/admin/borrowing-records', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        })
-      ]);
+    // Calculate stats from components
+    const totalComponents = components.length;
+    const availableComponents = components.reduce((sum, comp) => sum + (comp.availableQuantity || 0), 0);
+    const totalQuantity = components.reduce((sum, comp) => sum + (comp.totalQuantity || 0), 0);
+    const lowStockAlerts = components.filter(comp => comp.availableQuantity <= (comp.threshold || 5)).length;
+    const efficiencyRate = totalQuantity > 0 
+      ? Math.round((availableComponents / totalQuantity) * 100) 
+      : 100;
 
-      if (componentsResponse.ok && borrowingRecordsResponse.ok) {
-        const components = await componentsResponse.json();
-        const borrowingRecords = await borrowingRecordsResponse.json();
+    // Calculate category distribution
+    const categoryMap = {};
+    components.forEach(comp => {
+      const category = comp.category || 'Other';
+      categoryMap[category] = (categoryMap[category] || 0) + 1;
+    });
+    const categoryData = Object.entries(categoryMap).map(([name, value]) => ({
+      name,
+      value
+    }));
 
-        // Calculate stats from components
-        const totalComponents = components.length;
-        const availableComponents = components.reduce((sum, comp) => sum + (comp.availableQuantity || 0), 0);
-        const totalQuantity = components.reduce((sum, comp) => sum + (comp.totalQuantity || 0), 0);
-        const lowStockAlerts = components.filter(comp => comp.availableQuantity <= comp.threshold).length;
-        const efficiencyRate = totalQuantity > 0 
-          ? Math.round((availableComponents / totalQuantity) * 100) 
-          : 100;
+    // Calculate borrowing stats
+    const activeBorrows = borrowingRecords.filter(record => record.status === 'borrowed');
+    const activeBorrowsCount = activeBorrows.length;
 
-        // Calculate category distribution
-        const categoryMap = {};
-        components.forEach(comp => {
-          const category = comp.category || 'Other';
-          categoryMap[category] = (categoryMap[category] || 0) + 1;
-        });
-        const categoryData = Object.entries(categoryMap).map(([name, value]) => ({
-          name,
-          value
-        }));
+    // Calculate overdue items
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const overdueItems = activeBorrows.filter(record => {
+      if (!record.expectedReturnDate) return false;
+      const expectedDate = new Date(record.expectedReturnDate);
+      expectedDate.setHours(0, 0, 0, 0);
+      return expectedDate < today;
+    });
+    const overdueItemsCount = overdueItems.length;
 
-        // Calculate borrowing stats
-        const activeBorrows = borrowingRecords.filter(record => record.status === 'borrowed');
-        const activeBorrowsCount = activeBorrows.length;
+    // Get overdue items details for urgent actions
+    const overdueItemsDetails = overdueItems
+      .sort((a, b) => new Date(a.expectedReturnDate) - new Date(b.expectedReturnDate))
+      .slice(0, 5)
+      .map(record => ({
+        recordId: record.recordId,
+        componentName: record.componentName,
+        userId: record.userId,
+        expectedReturnDate: record.expectedReturnDate,
+        daysOverdue: Math.floor((today - new Date(record.expectedReturnDate)) / (1000 * 60 * 60 * 24))
+      }));
 
-        // Calculate overdue items
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const overdueItems = activeBorrows.filter(record => {
-          const expectedDate = new Date(record.expectedReturnDate);
-          expectedDate.setHours(0, 0, 0, 0);
-          return expectedDate < today;
-        });
-        const overdueItemsCount = overdueItems.length;
+    // Get low stock components for urgent actions
+    const lowStockComponents = components
+      .filter(comp => comp.availableQuantity <= (comp.threshold || 5))
+      .sort((a, b) => a.availableQuantity - b.availableQuantity)
+      .slice(0, 5)
+      .map(comp => ({
+        componentId: comp.componentId,
+        componentName: comp.name,
+        availableQuantity: comp.availableQuantity,
+        threshold: comp.threshold || 5,
+        category: comp.category
+      }));
 
-        // Get overdue items details for urgent actions
-        const overdueItemsDetails = overdueItems
-          .sort((a, b) => new Date(a.expectedReturnDate) - new Date(b.expectedReturnDate))
-          .slice(0, 5)
-          .map(record => ({
-            recordId: record.recordId,
-            componentName: record.componentName,
-            userId: record.userId,
-            expectedReturnDate: record.expectedReturnDate,
-            daysOverdue: Math.floor((today - new Date(record.expectedReturnDate)) / (1000 * 60 * 60 * 24))
-          }));
-
-        // Get low stock components for urgent actions
-        const lowStockComponents = components
-          .filter(comp => comp.availableQuantity <= comp.threshold)
-          .sort((a, b) => a.availableQuantity - b.availableQuantity)
-          .slice(0, 5)
-          .map(comp => ({
-            componentId: comp.componentId,
-            componentName: comp.name,
-            availableQuantity: comp.availableQuantity,
-            threshold: comp.threshold,
-            category: comp.category
-          }));
-
-        setStats({
-          totalComponents,
-          availableComponents,
-          activeBorrows: activeBorrowsCount,
-          overdueItems: overdueItemsCount,
-          lowStockAlerts,
-          efficiencyRate
-        });
-
-        setCategoryData(categoryData);
-        setUrgentActions({
-          overdueItems: overdueItemsDetails,
-          procurementAlerts: lowStockComponents
-        });
+    return {
+      stats: {
+        totalComponents,
+        availableComponents,
+        activeBorrows: activeBorrowsCount,
+        overdueItems: overdueItemsCount,
+        lowStockAlerts,
+        efficiencyRate
+      },
+      categoryData,
+      urgentActions: {
+        overdueItems: overdueItemsDetails,
+        procurementAlerts: lowStockComponents
       }
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+  }, [componentsData, borrowingRecordsData]);
 
+  const loading = componentsLoading || borrowingLoading;
+  const error = componentsError || borrowingError;
   const maxValue = categoryData.length > 0 ? Math.max(...categoryData.map(d => d.value)) : 1;
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="dashboard">
+        <div className="dashboard-header">
+          <div>
+            <h1 className="dashboard-title">Dashboard</h1>
+            <p className="dashboard-subtitle">Overview of your IoT Lab inventory</p>
+          </div>
+        </div>
+        <div style={{ padding: '40px', textAlign: 'center' }}>
+          <Icon name="loader-2" size={32} className="spinning" />
+          <p style={{ marginTop: '20px', color: '#666' }}>Loading dashboard data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="dashboard">
+        <div className="dashboard-header">
+          <div>
+            <h1 className="dashboard-title">Dashboard</h1>
+            <p className="dashboard-subtitle">Overview of your IoT Lab inventory</p>
+          </div>
+        </div>
+        <div style={{ padding: '40px', textAlign: 'center' }}>
+          <p style={{ color: '#e74c3c', marginBottom: '20px' }}>
+            Error loading dashboard data. Please try again.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard">
@@ -201,7 +219,7 @@ const Dashboard = () => {
               </>
             ) : (
               <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>
-                {loading ? 'Loading...' : 'No category data available'}
+                No category data available
               </div>
             )}
           </div>
@@ -274,4 +292,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-

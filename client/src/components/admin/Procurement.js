@@ -1,74 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import './Procurement.css';
 import Icon from '../Icon';
 import AddProcurementModal from './AddProcurementModal';
 import ProcurementDetailsModal from './ProcurementDetailsModal';
+import { useGetProcurementRequestsQuery } from '../../store/api/adminApi';
 
 const Procurement = () => {
-  const [requests, setRequests] = useState([]);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [showAddModal, setShowAddModal] = React.useState(false);
+  const [selectedRequest, setSelectedRequest] = React.useState(null);
 
-  useEffect(() => {
-    fetchRequests();
-  }, []);
+  // Use RTK Query hook - automatically cached!
+  const { 
+    data: requestsData, 
+    isLoading, 
+    isError,
+    error 
+  } = useGetProcurementRequestsQuery();
 
-  const fetchRequests = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5001/api/admin/procurement', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        // Ensure data is an array
-        const requestsArray = Array.isArray(data) ? data : [];
-        setRequests(requestsArray);
-      } else {
-        // Use mock data on error
-        setRequests([
-          {
-            _id: '1',
-            itemName: 'Raspberry Pi 4',
-            quantity: 6,
-            priority: 'MEDIUM',
-            status: 'PENDING'
-          },
-          {
-            _id: '2',
-            itemName: 'SG90 Micro Servo',
-            quantity: 16,
-            priority: 'MEDIUM',
-            status: 'PENDING'
-          },
-          {
-            _id: '3',
-            itemName: 'ESP32 DevKit',
-            quantity: 10,
-            priority: 'MEDIUM',
-            status: 'PENDING'
-          },
-          {
-            _id: '4',
-            itemName: 'Jumper Wires Set',
-            quantity: 5,
-            priority: 'LOW',
-            status: 'PENDING'
-          }
-        ]);
-      }
-    } catch (error) {
-      console.error('Error fetching requests:', error);
-      // Set empty array on error to prevent crashes
-      setRequests([]);
-    }
-  };
+  // Transform API data
+  const requestsArray = useMemo(() => {
+    if (!requestsData) return [];
+    return Array.isArray(requestsData) ? requestsData : [];
+  }, [requestsData]);
 
-  // Ensure requests is always an array
-  const requestsArray = Array.isArray(requests) ? requests : [];
   const totalRequests = requestsArray.length;
   const pendingRequests = requestsArray.filter(r => r && r.status === 'PENDING').length;
   const totalUnits = requestsArray.reduce((sum, r) => sum + (r?.quantity || 0), 0);
@@ -92,6 +46,43 @@ const Procurement = () => {
       default: return 'pending';
     }
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="procurement">
+        <div className="procurement-header">
+          <div>
+            <h1 className="procurement-title">Procurement List</h1>
+            <p className="procurement-subtitle">Manage component orders and requests</p>
+          </div>
+        </div>
+        <div style={{ padding: '40px', textAlign: 'center' }}>
+          <Icon name="loader-2" size={32} className="spinning" />
+          <p style={{ marginTop: '20px', color: '#666' }}>Loading procurement requests...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (isError) {
+    return (
+      <div className="procurement">
+        <div className="procurement-header">
+          <div>
+            <h1 className="procurement-title">Procurement List</h1>
+            <p className="procurement-subtitle">Manage component orders and requests</p>
+          </div>
+        </div>
+        <div style={{ padding: '40px', textAlign: 'center' }}>
+          <p style={{ color: '#e74c3c', marginBottom: '20px' }}>
+            Error loading procurement requests: {error?.data?.message || 'Unknown error'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="procurement">
@@ -120,7 +111,7 @@ const Procurement = () => {
           <tbody>
             {requestsArray.length > 0 ? (
               requestsArray.map(request => (
-                <tr key={request._id || request.componentId}>
+                <tr key={request._id || request.requestId}>
                   <td>{request.itemName || request.name || 'N/A'}</td>
                   <td>{request.quantity || 0} units</td>
                   <td>
@@ -184,7 +175,7 @@ const Procurement = () => {
         <AddProcurementModal
           onClose={() => setShowAddModal(false)}
           onSuccess={() => {
-            fetchRequests();
+            // Cache is automatically invalidated by the mutation
             setShowAddModal(false);
           }}
         />
@@ -201,4 +192,3 @@ const Procurement = () => {
 };
 
 export default Procurement;
-

@@ -1,6 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import './AddItemModal.css';
 import Icon from '../Icon';
+import { 
+  useGetComponentsQuery,
+  useCreateProcurementRequestMutation 
+} from '../../store/api/adminApi';
 
 const AddProcurementModal = ({ onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -12,35 +16,21 @@ const AddProcurementModal = ({ onClose, onSuccess }) => {
     description: '',
     remarks: ''
   });
-  const [components, setComponents] = useState([]);
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [loadingComponents, setLoadingComponents] = useState(false);
 
-  useEffect(() => {
-    fetchComponents();
-  }, []);
+  // RTK Query hooks - automatically cached!
+  const { 
+    data: componentsData, 
+    isLoading: loadingComponents 
+  } = useGetComponentsQuery();
 
-  const fetchComponents = async () => {
-    try {
-      setLoadingComponents(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5001/api/admin/components', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+  const [createProcurementRequest, { isLoading: loading }] = useCreateProcurementRequestMutation();
 
-      if (response.ok) {
-        const data = await response.json();
-        setComponents(Array.isArray(data) ? data : []);
-      }
-    } catch (err) {
-      console.error('Error fetching components:', err);
-    } finally {
-      setLoadingComponents(false);
-    }
-  };
+  // Transform components data
+  const components = useMemo(() => {
+    if (!componentsData) return [];
+    return Array.isArray(componentsData) ? componentsData : [];
+  }, [componentsData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -78,11 +68,7 @@ const AddProcurementModal = ({ onClose, onSuccess }) => {
       return;
     }
 
-    setLoading(true);
-
     try {
-      const token = localStorage.getItem('token');
-
       const payload = {
         itemName: formData.itemName.trim(),
         quantity: parseInt(formData.quantity) || 1,
@@ -93,30 +79,16 @@ const AddProcurementModal = ({ onClose, onSuccess }) => {
         remarks: formData.remarks.trim()
       };
 
-      const response = await fetch('http://localhost:5001/api/admin/procurement', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
+      // Use RTK Query mutation - cache is automatically invalidated
+      const data = await createProcurementRequest(payload).unwrap();
 
-      const data = await response.json();
-
-      if (response.ok) {
-        if (onSuccess) {
-          onSuccess(data);
-        }
-        onClose();
-      } else {
-        setError(data.message || 'Failed to create procurement request. Please try again.');
+      if (onSuccess) {
+        onSuccess(data);
       }
+      onClose();
     } catch (err) {
       console.error('Create procurement request error:', err);
-      setError('Network error. Please check your connection and try again.');
-    } finally {
-      setLoading(false);
+      setError(err?.data?.message || 'Failed to create procurement request. Please try again.');
     }
   };
 
@@ -281,4 +253,3 @@ const AddProcurementModal = ({ onClose, onSuccess }) => {
 };
 
 export default AddProcurementModal;
-

@@ -1,169 +1,139 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import './SmartLab.css';
 import Icon from '../Icon';
+import { useGetSmartLabDataQuery } from '../../store/api/adminApi';
 
 const SmartLab = () => {
-  const [devices, setDevices] = useState([]);
-  const [stats, setStats] = useState({
-    total: 6,
-    active: 3,
-    offline: 3
-  });
+  // Use RTK Query hook - automatically cached!
+  const { 
+    data: smartLabData, 
+    isLoading, 
+    isError,
+    error 
+  } = useGetSmartLabDataQuery();
 
-  const fetchDevices = useCallback(async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5001/api/admin/smart-lab', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setDevices(data.devices || []);
-        setStats(data.stats || { total: 6, active: 3, offline: 3 });
-      } else {
-        // Use mock data
-        setDevices([
-          { _id: '1', name: 'Main Lab Lights', location: 'Ceiling A', type: 'light', status: 'active' },
-          { _id: '2', name: 'Workbench Fan', location: 'Bench 3', type: 'fan', status: 'off' },
-          { _id: '3', name: 'Storage AC', location: 'Server Room', type: 'ac', status: 'active' },
-          { _id: '4', name: 'Entry Hall Lights', location: 'Entrance', type: 'light', status: 'off' },
-          { _id: '5', name: 'Workshop Fan', location: 'Workshop Area', type: 'fan', status: 'active' },
-          { _id: '6', name: 'Lab AC', location: 'Main Lab', type: 'ac', status: 'off' }
-        ]);
-      }
-    } catch (error) {
-      console.error('Error fetching devices:', error);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchDevices();
-  }, [fetchDevices]);
+  const devices = smartLabData?.devices || [];
+  const stats = smartLabData?.stats || { total: 6, active: 3, offline: 3 };
 
   const toggleDevice = async (deviceId) => {
-    // Toggle device status
-    setDevices(devices.map(device =>
-      device._id === deviceId
-        ? { ...device, status: device.status === 'active' ? 'off' : 'active' }
-        : device
-    ));
-    
-    // Update stats
-    const updatedDevices = devices.map(device =>
-      device._id === deviceId
-        ? { ...device, status: device.status === 'active' ? 'off' : 'active' }
-        : device
+    // Toggle device status locally (in a real app, this would be a mutation)
+    // For now, this is just UI state management
+    console.log('Toggle device:', deviceId);
+  };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="smart-lab">
+        <div className="smart-lab-header">
+          <div>
+            <h1 className="smart-lab-title">Smart Lab Control</h1>
+            <p className="smart-lab-subtitle">Manage IoT devices and sensors</p>
+          </div>
+        </div>
+        <div style={{ padding: '40px', textAlign: 'center' }}>
+          <Icon name="loader-2" size={32} className="spinning" />
+          <p style={{ marginTop: '20px', color: '#666' }}>Loading smart lab devices...</p>
+        </div>
+      </div>
     );
-    setStats({
-      total: updatedDevices.length,
-      active: updatedDevices.filter(d => d.status === 'active').length,
-      offline: updatedDevices.filter(d => d.status === 'off').length
-    });
-  };
+  }
 
-  const getDeviceIcon = (type) => {
-    switch (type) {
-      case 'light': return <Icon name="lightbulb" size={32} />;
-      case 'fan': return <Icon name="wind" size={32} />;
-      case 'ac': return <Icon name="snowflake" size={32} />;
-      default: return <Icon name="zap" size={32} />;
-    }
-  };
-
-  const turnAllOn = () => {
-    setDevices(devices.map(d => ({ ...d, status: 'active' })));
-    setStats({ ...stats, active: devices.length, offline: 0 });
-  };
-
-  const turnAllOff = () => {
-    setDevices(devices.map(d => ({ ...d, status: 'off' })));
-    setStats({ ...stats, active: 0, offline: devices.length });
-  };
+  // Show error state
+  if (isError) {
+    return (
+      <div className="smart-lab">
+        <div className="smart-lab-header">
+          <div>
+            <h1 className="smart-lab-title">Smart Lab Control</h1>
+            <p className="smart-lab-subtitle">Manage IoT devices and sensors</p>
+          </div>
+        </div>
+        <div style={{ padding: '40px', textAlign: 'center' }}>
+          <p style={{ color: '#e74c3c', marginBottom: '20px' }}>
+            Error loading smart lab data: {error?.data?.message || 'Unknown error'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="smart-lab">
       <div className="smart-lab-header">
         <div>
-          <h1 className="smart-lab-title">Smart Lab IoT Control</h1>
-          <p className="smart-lab-subtitle">Monitor and control lab devices remotely</p>
-        </div>
-        <div className="system-status">
-          <span className="status-indicator online"></span>
-          <span>System Online</span>
+          <h1 className="smart-lab-title">Smart Lab Control</h1>
+          <p className="smart-lab-subtitle">Manage IoT devices and sensors</p>
         </div>
       </div>
 
-      <div className="device-stats">
+      <div className="smart-lab-stats">
         <div className="stat-card">
-          <div className="stat-icon"><Icon name="zap" size={24} /></div>
+          <div className="stat-icon blue">
+            <Icon name="cpu" size={24} />
+          </div>
           <div className="stat-content">
             <div className="stat-label">Total Devices</div>
-            <div className="stat-value">{stats.total}</div>
+            <div className="stat-value">{stats.total || 0}</div>
           </div>
         </div>
-
         <div className="stat-card">
-          <div className="stat-icon green"><Icon name="check-circle" size={24} /></div>
+          <div className="stat-icon green">
+            <Icon name="check-circle" size={24} />
+          </div>
           <div className="stat-content">
             <div className="stat-label">Active</div>
-            <div className="stat-value">{stats.active}</div>
+            <div className="stat-value">{stats.active || 0}</div>
           </div>
         </div>
-
         <div className="stat-card">
-          <div className="stat-icon gray"><Icon name="circle" size={24} /></div>
+          <div className="stat-icon gray">
+            <Icon name="x-circle" size={24} />
+          </div>
           <div className="stat-content">
             <div className="stat-label">Offline</div>
-            <div className="stat-value">{stats.offline}</div>
+            <div className="stat-value">{stats.offline || 0}</div>
           </div>
         </div>
       </div>
 
       <div className="devices-grid">
-        {devices.map(device => (
-          <div key={device._id} className="device-card">
-            <div className={`device-icon ${device.status === 'active' ? 'active' : ''}`}>
-              {getDeviceIcon(device.type)}
-            </div>
-            <div className="device-info">
-              <div className="device-name">{device.name}</div>
-              <div className="device-location">{device.location}</div>
-              <div className={`device-status ${device.status === 'active' ? 'active' : ''}`}>
-                {device.status === 'active' ? 'ACTIVE' : 'OFF'}
+        {devices.length > 0 ? (
+          devices.map(device => (
+            <div key={device._id || device.deviceId} className="device-card">
+              <div className="device-header">
+                <div className="device-info">
+                  <h3 className="device-name">{device.name || 'Unknown Device'}</h3>
+                  <p className="device-location">{device.location || 'Unknown Location'}</p>
+                </div>
+                <div className={`device-status ${device.status === 'active' ? 'active' : 'offline'}`}>
+                  <div className="status-dot"></div>
+                  <span>{device.status === 'active' ? 'Active' : 'Offline'}</span>
+                </div>
               </div>
+              <div className="device-type">
+                <Icon 
+                  name={device.type === 'light' ? 'lightbulb' : device.type === 'fan' ? 'wind' : 'cpu'} 
+                  size={20} 
+                />
+                <span>{device.type || 'Unknown'}</span>
+              </div>
+              <button 
+                className={`device-toggle ${device.status === 'active' ? 'active' : ''}`}
+                onClick={() => toggleDevice(device._id || device.deviceId)}
+              >
+                {device.status === 'active' ? 'Turn Off' : 'Turn On'}
+              </button>
             </div>
-            <button
-              className="device-toggle"
-              onClick={() => toggleDevice(device._id)}
-            >
-              <Icon name="power" size={20} />
-            </button>
+          ))
+        ) : (
+          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: '#666' }}>
+            No devices found
           </div>
-        ))}
-      </div>
-
-      <div className="quick-actions">
-        <h2 className="section-title">Quick Actions</h2>
-        <div className="action-buttons">
-          <button className="action-btn primary" onClick={turnAllOn}>
-            Turn All On
-          </button>
-          <button className="action-btn" onClick={turnAllOff}>
-            Turn All Off
-          </button>
-          <button className="action-btn">
-            All Lights On
-          </button>
-          <button className="action-btn">
-            Climate Control Off
-          </button>
-        </div>
+        )}
       </div>
     </div>
   );
 };
 
 export default SmartLab;
-

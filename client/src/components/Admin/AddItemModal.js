@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './AddItemModal.css';
 import Icon from '../Icon';
+import { useCreateComponentMutation } from '../../store/api/adminApi';
 
 const AddItemModal = ({ onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -16,7 +17,9 @@ const AddItemModal = ({ onClose, onSuccess }) => {
     purchaseDate: ''
   });
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  
+  // RTK Query mutation hook - automatically invalidates cache on success
+  const [createComponent, { isLoading: loading }] = useCreateComponentMutation();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -46,11 +49,7 @@ const AddItemModal = ({ onClose, onSuccess }) => {
       return;
     }
 
-    setLoading(true);
-
     try {
-      const token = localStorage.getItem('token');
-      
       // Parse tags from comma-separated string
       const tagsArray = formData.tags
         ? formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
@@ -61,6 +60,7 @@ const AddItemModal = ({ onClose, onSuccess }) => {
         category: formData.category.trim(),
         description: formData.description.trim(),
         totalQuantity: parseInt(formData.totalQuantity) || 0,
+        availableQuantity: parseInt(formData.totalQuantity) || 0, // Initially all available
         threshold: parseInt(formData.threshold) || 5,
         tags: tagsArray,
         datasheetLink: formData.datasheetLink.trim(),
@@ -69,30 +69,16 @@ const AddItemModal = ({ onClose, onSuccess }) => {
         purchaseDate: formData.purchaseDate || null
       };
 
-      const response = await fetch('http://localhost:5001/api/admin/components', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
+      // Use RTK Query mutation - cache is automatically invalidated on success
+      const data = await createComponent(payload).unwrap();
 
-      const data = await response.json();
-
-      if (response.ok) {
-        if (onSuccess) {
-          onSuccess(data);
-        }
-        onClose();
-      } else {
-        setError(data.message || 'Failed to add component. Please try again.');
+      if (onSuccess) {
+        onSuccess(data);
       }
+      onClose();
     } catch (err) {
       console.error('Add component error:', err);
-      setError('Network error. Please check your connection and try again.');
-    } finally {
-      setLoading(false);
+      setError(err?.data?.message || 'Failed to add component. Please try again.');
     }
   };
 

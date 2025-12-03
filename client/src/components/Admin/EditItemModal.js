@@ -1,6 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import './AddItemModal.css';
 import Icon from '../Icon';
+import { 
+  useGetComponentByIdQuery, 
+  useUpdateComponentMutation 
+} from '../../store/api/adminApi';
 
 const EditItemModal = ({ component, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -17,76 +21,54 @@ const EditItemModal = ({ component, onClose, onSuccess }) => {
     purchaseDate: ''
   });
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(true);
 
-  const fetchComponentDetails = useCallback(async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5001/api/admin/components/${component.componentId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+  // Get component ID - handle both componentId and _id
+  const componentId = component?.componentId || component?._id;
+
+  // RTK Query hooks - automatically cached!
+  const { 
+    data: componentData, 
+    isLoading: fetching, 
+    isError: fetchError 
+  } = useGetComponentByIdQuery(componentId, {
+    skip: !componentId, // Skip if no componentId
+  });
+
+  const [updateComponent, { isLoading: loading }] = useUpdateComponentMutation();
+
+  // Populate form when component data is loaded
+  useEffect(() => {
+    if (componentData) {
+      setFormData({
+        name: componentData.name || '',
+        category: componentData.category || '',
+        description: componentData.description || '',
+        tags: Array.isArray(componentData.tags) ? componentData.tags.join(', ') : '',
+        totalQuantity: componentData.totalQuantity || 0,
+        availableQuantity: componentData.availableQuantity || 0,
+        threshold: componentData.threshold || 5,
+        condition: componentData.condition || 'good',
+        datasheetLink: componentData.datasheetLink || '',
+        remarks: componentData.remarks || '',
+        purchaseDate: componentData.purchaseDate ? new Date(componentData.purchaseDate).toISOString().split('T')[0] : ''
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        setFormData({
-          name: data.name || '',
-          category: data.category || '',
-          description: data.description || '',
-          tags: Array.isArray(data.tags) ? data.tags.join(', ') : '',
-          totalQuantity: data.totalQuantity || 0,
-          availableQuantity: data.availableQuantity || 0,
-          threshold: data.threshold || 5,
-          condition: data.condition || 'good',
-          datasheetLink: data.datasheetLink || '',
-          remarks: data.remarks || '',
-          purchaseDate: data.purchaseDate ? new Date(data.purchaseDate).toISOString().split('T')[0] : ''
-        });
-      } else {
-        // If API fails, use the component data we have
-        setFormData({
-          name: component.name || '',
-          category: component.category || '',
-          description: component.description || '',
-          tags: Array.isArray(component.tags) ? component.tags.join(', ') : '',
-          totalQuantity: component.totalStock || 0,
-          availableQuantity: component.stock || 0,
-          threshold: 5,
-          condition: 'good',
-          datasheetLink: '',
-          remarks: '',
-          purchaseDate: ''
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching component details:', error);
-      // Use the component data we have
+    } else if (component && !componentData && !fetching) {
+      // Fallback to component props if API data not available
       setFormData({
         name: component.name || '',
         category: component.category || '',
         description: component.description || '',
         tags: Array.isArray(component.tags) ? component.tags.join(', ') : '',
-        totalQuantity: component.totalStock || 0,
-        availableQuantity: component.stock || 0,
-        threshold: 5,
-        condition: 'good',
-        datasheetLink: '',
-        remarks: '',
-        purchaseDate: ''
+        totalQuantity: component.totalStock || component.totalQuantity || 0,
+        availableQuantity: component.stock || component.availableQuantity || 0,
+        threshold: component.threshold || 5,
+        condition: component.condition || 'good',
+        datasheetLink: component.datasheetLink || '',
+        remarks: component.remarks || '',
+        purchaseDate: component.purchaseDate || ''
       });
-    } finally {
-      setFetching(false);
     }
-  }, [component]);
-
-  useEffect(() => {
-    // Fetch full component details if we only have basic info
-    if (component && component.componentId) {
-      fetchComponentDetails();
-    }
-  }, [component, fetchComponentDetails]);
+  }, [componentData, component, fetching]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -131,11 +113,7 @@ const EditItemModal = ({ component, onClose, onSuccess }) => {
       return;
     }
 
-    setLoading(true);
-
     try {
-      const token = localStorage.getItem('token');
-      
       // Parse tags from comma-separated string
       const tagsArray = formData.tags
         ? formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
@@ -155,30 +133,16 @@ const EditItemModal = ({ component, onClose, onSuccess }) => {
         purchaseDate: formData.purchaseDate || null
       };
 
-      const response = await fetch(`http://localhost:5001/api/admin/components/${component.componentId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
+      // Use RTK Query mutation - cache is automatically invalidated
+      const data = await updateComponent({ componentId, ...payload }).unwrap();
 
-      const data = await response.json();
-
-      if (response.ok) {
-        if (onSuccess) {
-          onSuccess(data);
-        }
-        onClose();
-      } else {
-        setError(data.message || 'Failed to update component. Please try again.');
+      if (onSuccess) {
+        onSuccess(data);
       }
+      onClose();
     } catch (err) {
       console.error('Update component error:', err);
-      setError('Network error. Please check your connection and try again.');
-    } finally {
-      setLoading(false);
+      setError(err?.data?.message || 'Failed to update component. Please try again.');
     }
   };
 
@@ -193,6 +157,21 @@ const EditItemModal = ({ component, onClose, onSuccess }) => {
           <div style={{ padding: '40px', textAlign: 'center' }}>
             <Icon name="loader-2" size={32} className="spinning" />
             <p style={{ marginTop: '20px', color: '#666' }}>Loading component details...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (fetchError && !component) {
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-content add-item-modal" onClick={(e) => e.stopPropagation()}>
+          <div style={{ padding: '40px', textAlign: 'center' }}>
+            <p style={{ color: '#e74c3c', marginBottom: '20px' }}>
+              Error loading component details
+            </p>
+            <button className="btn-cancel" onClick={onClose}>Close</button>
           </div>
         </div>
       </div>
@@ -418,4 +397,3 @@ const EditItemModal = ({ component, onClose, onSuccess }) => {
 };
 
 export default EditItemModal;
-
