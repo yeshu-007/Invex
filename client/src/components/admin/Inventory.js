@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import './Inventory.css';
+import Icon from '../Icon';
+import AddItemModal from './AddItemModal';
+import EditItemModal from './EditItemModal';
 
 const Inventory = () => {
   const [components, setComponents] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingComponent, setEditingComponent] = useState(null);
+  const [deletingComponent, setDeletingComponent] = useState(null);
 
   useEffect(() => {
     fetchComponents();
@@ -106,6 +112,40 @@ const Inventory = () => {
     )
   ) : [];
 
+  const handleDelete = async (component) => {
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${component.name}"?\n\nThis action cannot be undone.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5001/api/admin/components/${component.componentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Refresh the components list after successful deletion
+        fetchComponents();
+        alert(`Component "${component.name}" has been deleted successfully.`);
+      } else {
+        alert(data.message || 'Failed to delete component. Please try again.');
+      }
+    } catch (error) {
+      console.error('Delete component error:', error);
+      alert('Network error. Please check your connection and try again.');
+    }
+  };
+
   return (
     <div className="inventory">
       <div className="inventory-header">
@@ -117,7 +157,7 @@ const Inventory = () => {
 
       <div className="inventory-toolbar">
         <div className="search-bar">
-          <span className="search-icon">🔍</span>
+          <Icon name="search" size={20} className="search-icon" />
           <input
             type="text"
             placeholder="Search by name or tags..."
@@ -127,10 +167,12 @@ const Inventory = () => {
         </div>
         <div className="toolbar-actions">
           <button className="btn-secondary">
-            📤 Bulk Upload CSV
+            <Icon name="upload" size={18} style={{ marginRight: '8px' }} />
+            Bulk Upload CSV
           </button>
-          <button className="btn-primary">
-            ➕ Add Item
+          <button className="btn-primary" onClick={() => setShowAddModal(true)}>
+            <Icon name="plus" size={18} style={{ marginRight: '8px' }} />
+            Add Item
           </button>
         </div>
       </div>
@@ -175,8 +217,20 @@ const Inventory = () => {
                   </td>
                   <td>
                     <div className="action-buttons">
-                      <button className="action-btn edit">✏️</button>
-                      <button className="action-btn delete">🗑️</button>
+                      <button 
+                        className="action-btn edit" 
+                        onClick={() => setEditingComponent(component)}
+                        title="Edit component"
+                      >
+                        <Icon name="pencil" size={16} />
+                      </button>
+                      <button 
+                        className="action-btn delete"
+                        onClick={() => handleDelete(component)}
+                        title="Delete component"
+                      >
+                        <Icon name="trash-2" size={16} />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -191,6 +245,29 @@ const Inventory = () => {
           </tbody>
         </table>
       </div>
+
+      {showAddModal && (
+        <AddItemModal
+          onClose={() => setShowAddModal(false)}
+          onSuccess={(data) => {
+            // Refresh the components list after successful addition
+            fetchComponents();
+            setShowAddModal(false);
+          }}
+        />
+      )}
+
+      {editingComponent && (
+        <EditItemModal
+          component={editingComponent}
+          onClose={() => setEditingComponent(null)}
+          onSuccess={(data) => {
+            // Refresh the components list after successful update
+            fetchComponents();
+            setEditingComponent(null);
+          }}
+        />
+      )}
     </div>
   );
 };

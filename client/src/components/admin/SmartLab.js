@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './SmartLab.css';
+import Icon from '../Icon';
 
 const SmartLab = () => {
   const [devices, setDevices] = useState([]);
@@ -9,11 +10,7 @@ const SmartLab = () => {
     offline: 3
   });
 
-  useEffect(() => {
-    fetchDevices();
-  }, []);
-
-  const fetchDevices = async () => {
+  const fetchDevices = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch('http://localhost:5001/api/admin/smart-lab', {
@@ -24,7 +21,7 @@ const SmartLab = () => {
       if (response.ok) {
         const data = await response.json();
         setDevices(data.devices || []);
-        setStats(data.stats || stats);
+        setStats(data.stats || { total: 6, active: 3, offline: 3 });
       } else {
         // Use mock data
         setDevices([
@@ -39,7 +36,11 @@ const SmartLab = () => {
     } catch (error) {
       console.error('Error fetching devices:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchDevices();
+  }, [fetchDevices]);
 
   const toggleDevice = async (deviceId) => {
     // Toggle device status
@@ -64,10 +65,10 @@ const SmartLab = () => {
 
   const getDeviceIcon = (type) => {
     switch (type) {
-      case 'light': return '💡';
-      case 'fan': return '🌀';
-      case 'ac': return '❄️';
-      default: return '⚡';
+      case 'light': return <Icon name="lightbulb" size={32} />;
+      case 'fan': return <Icon name="wind" size={32} />;
+      case 'ac': return <Icon name="snowflake" size={32} />;
+      default: return <Icon name="zap" size={32} />;
     }
   };
 
@@ -96,7 +97,7 @@ const SmartLab = () => {
 
       <div className="device-stats">
         <div className="stat-card">
-          <div className="stat-icon">⚡</div>
+          <div className="stat-icon"><Icon name="zap" size={24} /></div>
           <div className="stat-content">
             <div className="stat-label">Total Devices</div>
             <div className="stat-value">{stats.total}</div>
@@ -104,7 +105,7 @@ const SmartLab = () => {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon green">✓</div>
+          <div className="stat-icon green"><Icon name="check-circle" size={24} /></div>
           <div className="stat-content">
             <div className="stat-label">Active</div>
             <div className="stat-value">{stats.active}</div>
@@ -112,7 +113,7 @@ const SmartLab = () => {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon gray">○</div>
+          <div className="stat-icon gray"><Icon name="circle" size={24} /></div>
           <div className="stat-content">
             <div className="stat-label">Offline</div>
             <div className="stat-value">{stats.offline}</div>
@@ -137,7 +138,7 @@ const SmartLab = () => {
               className="device-toggle"
               onClick={() => toggleDevice(device._id)}
             >
-              ⚡
+              <Icon name="power" size={20} />
             </button>
           </div>
         ))}

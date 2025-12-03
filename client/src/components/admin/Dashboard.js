@@ -1,46 +1,129 @@
 import React, { useState, useEffect } from 'react';
 import './Dashboard.css';
+import Icon from '../Icon';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
-    totalComponents: 110,
-    availableComponents: 66,
-    activeBorrows: 2,
-    overdueItems: 1,
-    lowStockAlerts: 2,
-    efficiencyRate: 94
+    totalComponents: 0,
+    availableComponents: 0,
+    activeBorrows: 0,
+    overdueItems: 0,
+    lowStockAlerts: 0,
+    efficiencyRate: 0
   });
 
-  const [categoryData] = useState([
-    { name: 'Sensors', value: 45 },
-    { name: 'Actuators', value: 28 },
-    { name: 'Microcontrollers', value: 22 },
-    { name: 'SBCs', value: 15 }
-  ]);
+  const [categoryData, setCategoryData] = useState([]);
+  const [urgentActions, setUrgentActions] = useState({
+    overdueItems: [],
+    procurementAlerts: []
+  });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch dashboard data from API
+    // Fetch dashboard data from multiple API calls
     fetchDashboardData();
   }, []);
 
   const fetchDashboardData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5001/api/admin/dashboard', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setStats(data);
+      
+      // Fetch components and borrowing records in parallel
+      const [componentsResponse, borrowingRecordsResponse] = await Promise.all([
+        fetch('http://localhost:5001/api/admin/components', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch('http://localhost:5001/api/admin/borrowing-records', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+      ]);
+
+      if (componentsResponse.ok && borrowingRecordsResponse.ok) {
+        const components = await componentsResponse.json();
+        const borrowingRecords = await borrowingRecordsResponse.json();
+
+        // Calculate stats from components
+        const totalComponents = components.length;
+        const availableComponents = components.reduce((sum, comp) => sum + (comp.availableQuantity || 0), 0);
+        const totalQuantity = components.reduce((sum, comp) => sum + (comp.totalQuantity || 0), 0);
+        const lowStockAlerts = components.filter(comp => comp.availableQuantity <= comp.threshold).length;
+        const efficiencyRate = totalQuantity > 0 
+          ? Math.round((availableComponents / totalQuantity) * 100) 
+          : 100;
+
+        // Calculate category distribution
+        const categoryMap = {};
+        components.forEach(comp => {
+          const category = comp.category || 'Other';
+          categoryMap[category] = (categoryMap[category] || 0) + 1;
+        });
+        const categoryData = Object.entries(categoryMap).map(([name, value]) => ({
+          name,
+          value
+        }));
+
+        // Calculate borrowing stats
+        const activeBorrows = borrowingRecords.filter(record => record.status === 'borrowed');
+        const activeBorrowsCount = activeBorrows.length;
+
+        // Calculate overdue items
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const overdueItems = activeBorrows.filter(record => {
+          const expectedDate = new Date(record.expectedReturnDate);
+          expectedDate.setHours(0, 0, 0, 0);
+          return expectedDate < today;
+        });
+        const overdueItemsCount = overdueItems.length;
+
+        // Get overdue items details for urgent actions
+        const overdueItemsDetails = overdueItems
+          .sort((a, b) => new Date(a.expectedReturnDate) - new Date(b.expectedReturnDate))
+          .slice(0, 5)
+          .map(record => ({
+            recordId: record.recordId,
+            componentName: record.componentName,
+            userId: record.userId,
+            expectedReturnDate: record.expectedReturnDate,
+            daysOverdue: Math.floor((today - new Date(record.expectedReturnDate)) / (1000 * 60 * 60 * 24))
+          }));
+
+        // Get low stock components for urgent actions
+        const lowStockComponents = components
+          .filter(comp => comp.availableQuantity <= comp.threshold)
+          .sort((a, b) => a.availableQuantity - b.availableQuantity)
+          .slice(0, 5)
+          .map(comp => ({
+            componentId: comp.componentId,
+            componentName: comp.name,
+            availableQuantity: comp.availableQuantity,
+            threshold: comp.threshold,
+            category: comp.category
+          }));
+
+        setStats({
+          totalComponents,
+          availableComponents,
+          activeBorrows: activeBorrowsCount,
+          overdueItems: overdueItemsCount,
+          lowStockAlerts,
+          efficiencyRate
+        });
+
+        setCategoryData(categoryData);
+        setUrgentActions({
+          overdueItems: overdueItemsDetails,
+          procurementAlerts: lowStockComponents
+        });
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const maxValue = Math.max(...categoryData.map(d => d.value));
+  const maxValue = categoryData.length > 0 ? Math.max(...categoryData.map(d => d.value)) : 1;
 
   return (
     <div className="dashboard">
@@ -53,7 +136,7 @@ const Dashboard = () => {
 
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-icon purple">📦</div>
+          <div className="stat-icon purple"><Icon name="package" size={24} /></div>
           <div className="stat-content">
             <div className="stat-label">Total Components</div>
             <div className="stat-value">{stats.totalComponents}</div>
@@ -62,7 +145,7 @@ const Dashboard = () => {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon blue">⏰</div>
+          <div className="stat-icon blue"><Icon name="clock" size={24} /></div>
           <div className="stat-content">
             <div className="stat-label">Active Borrows</div>
             <div className="stat-value">{stats.activeBorrows}</div>
@@ -71,7 +154,7 @@ const Dashboard = () => {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon pink">⚠️</div>
+          <div className="stat-icon pink"><Icon name="alert-triangle" size={24} /></div>
           <div className="stat-content">
             <div className="stat-label">Low Stock Alerts</div>
             <div className="stat-value">{stats.lowStockAlerts}</div>
@@ -80,11 +163,11 @@ const Dashboard = () => {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon green">📈</div>
+          <div className="stat-icon green"><Icon name="trending-up" size={24} /></div>
           <div className="stat-content">
             <div className="stat-label">Efficiency Rate</div>
             <div className="stat-value">{stats.efficiencyRate}%</div>
-            <div className="stat-detail green">↑ +2.5% from last month</div>
+            <div className="stat-detail green">Availability rate</div>
           </div>
         </div>
       </div>
@@ -93,56 +176,94 @@ const Dashboard = () => {
         <div className="chart-section">
           <h2 className="section-title">Inventory by Category</h2>
           <div className="chart-container">
-            <div className="chart-bars">
-              {categoryData.map((item, idx) => (
-                <div key={idx} className="chart-bar-wrapper">
-                  <div className="chart-bar-label">{item.name}</div>
-                  <div className="chart-bar-container">
-                    <div
-                      className="chart-bar"
-                      style={{ height: `${(item.value / maxValue) * 100}%` }}
-                    >
-                      <span className="chart-bar-value">{item.value}</span>
+            {categoryData.length > 0 ? (
+              <>
+                <div className="chart-bars">
+                  {categoryData.map((item, idx) => (
+                    <div key={idx} className="chart-bar-wrapper">
+                      <div className="chart-bar-label">{item.name}</div>
+                      <div className="chart-bar-container">
+                        <div
+                          className="chart-bar"
+                          style={{ height: `${(item.value / maxValue) * 100}%` }}
+                        >
+                          <span className="chart-bar-value">{item.value}</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <div className="chart-y-axis">
-              {[0, 15, 30, 45, 60].map(val => (
-                <div key={val} className="y-axis-label">{val}</div>
-              ))}
-            </div>
+                <div className="chart-y-axis">
+                  {Array.from({ length: 5 }, (_, i) => Math.floor((maxValue / 4) * i)).map(val => (
+                    <div key={val} className="y-axis-label">{val}</div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>
+                {loading ? 'Loading...' : 'No category data available'}
+              </div>
+            )}
           </div>
         </div>
 
         <div className="urgent-actions">
           <h2 className="section-title">Urgent Actions</h2>
           <div className="action-cards">
-            <div className="action-card">
-              <div className="action-icon red">⏰</div>
-              <div className="action-content">
-                <div className="action-title">Overdue Item</div>
-                <div className="action-detail">Raspberry Pi 4</div>
-                <div className="action-subdetail red">Borrowed by stu001</div>
+            {urgentActions.overdueItems.length > 0 ? (
+              urgentActions.overdueItems.slice(0, 1).map((item, idx) => (
+                <div key={idx} className="action-card">
+                  <div className="action-icon red"><Icon name="clock" size={24} /></div>
+                  <div className="action-content">
+                    <div className="action-title">Overdue Item</div>
+                    <div className="action-detail">{item.componentName}</div>
+                    <div className="action-subdetail red">
+                      Borrowed by {item.userId} • {item.daysOverdue} day{item.daysOverdue !== 1 ? 's' : ''} overdue
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="action-card">
+                <div className="action-icon green"><Icon name="check-circle" size={24} /></div>
+                <div className="action-content">
+                  <div className="action-title">No Overdue Items</div>
+                  <div className="action-detail">All items returned on time</div>
+                  <div className="action-subdetail green">Great job!</div>
+                </div>
               </div>
-            </div>
+            )}
+
+            {urgentActions.procurementAlerts.length > 0 ? (
+              <div className="action-card">
+                <div className="action-icon pink"><Icon name="alert-triangle" size={24} /></div>
+                <div className="action-content">
+                  <div className="action-title">Procurement Alert</div>
+                  <div className="action-detail">
+                    {urgentActions.procurementAlerts.length} item{urgentActions.procurementAlerts.length !== 1 ? 's' : ''} below threshold
+                  </div>
+                  <div className="action-subdetail red">
+                    {urgentActions.procurementAlerts[0]?.componentName || 'Requires ordering'}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="action-card">
+                <div className="action-icon green"><Icon name="check-circle" size={24} /></div>
+                <div className="action-content">
+                  <div className="action-title">Stock Levels Good</div>
+                  <div className="action-detail">All items above threshold</div>
+                  <div className="action-subdetail green">No action needed</div>
+                </div>
+              </div>
+            )}
 
             <div className="action-card">
-              <div className="action-icon pink">⚠️</div>
-              <div className="action-content">
-                <div className="action-title">Procurement Alert</div>
-                <div className="action-detail">2 items below threshold</div>
-                <div className="action-subdetail red">Requires ordering</div>
-              </div>
-            </div>
-
-            <div className="action-card">
-              <div className="action-icon green">✓</div>
+              <div className="action-icon green"><Icon name="check-circle" size={24} /></div>
               <div className="action-content">
                 <div className="action-title">System Status</div>
                 <div className="action-detail">All systems operational</div>
-                <div className="action-subdetail green">Last checked 2 mins ago</div>
+                <div className="action-subdetail green">Last checked just now</div>
               </div>
             </div>
           </div>

@@ -83,9 +83,37 @@
   font-weight: 500;
 }
 
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
 .status-badge.pending {
   background-color: #e3f2fd;
   color: #1976d2;
+}
+
+.status-badge.approved {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-badge.ordered {
+  background-color: #fff3e0;
+  color: #e65100;
+}
+
+.status-badge.received {
+  background-color: #e8f5e9;
+  color: #1b5e20;
+}
+
+.status-badge.cancelled {
+  background-color: #ffebee;
+  color: #c62828;
 }
 
 .view-details-btn {
