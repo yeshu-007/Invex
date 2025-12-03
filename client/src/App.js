@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import StudentView from './components/StudentView';
 import AdminLogin from './components/admin/AdminLogin';
@@ -9,7 +8,6 @@ import Procurement from './components/admin/Procurement';
 import SmartLab from './components/admin/SmartLab';
 import './App.css';
 
-// Protected Route component for admin pages
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('token');
   const user = JSON.parse(localStorage.getItem('user') || '{}');
