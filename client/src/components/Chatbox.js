@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './Chatbox.css';
+import Icon from './Icon';
 
 const Chatbox = ({ onClose }) => {
   const [messages, setMessages] = useState([
@@ -102,7 +103,7 @@ const Chatbox = ({ onClose }) => {
           disabled={loading}
         />
         <button type="submit" className="chatbox-send" disabled={loading || !inputValue.trim()}>
-          ✈️
+          <Icon name="send" size={20} />
         </button>
       </form>
     </div>

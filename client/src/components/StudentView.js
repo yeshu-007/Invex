@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './StudentView.css';
 import BorrowModal from './BorrowModal';
-import StudentLoginModal from './StudentLoginModal';
 import Chatbox from './Chatbox';
+import Icon from './Icon';
 
 const StudentView = () => {
   const [components, setComponents] = useState([]);
@@ -10,7 +10,6 @@ const StudentView = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
   const [showBorrowModal, setShowBorrowModal] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
   const [selectedComponent, setSelectedComponent] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
@@ -41,6 +40,7 @@ const StudentView = () => {
         // Map API response to component format
         const mappedComponents = data.map(comp => ({
           _id: comp._id || comp.componentId,
+          componentId: comp.componentId,
           name: comp.name,
           description: comp.description || '',
           category: comp.category,
@@ -140,30 +140,26 @@ const StudentView = () => {
 
   const handleBorrowClick = (component) => {
     setSelectedComponent(component);
-    if (isLoggedIn) {
-      setShowBorrowModal(true);
-    } else {
-      setShowBorrowModal(true);
-    }
+    setShowBorrowModal(true);
   };
 
-  const handleLoginSuccess = (userData) => {
-    setIsLoggedIn(true);
-    setUser(userData);
-    setShowLoginModal(false);
-    if (selectedComponent) {
-      setShowBorrowModal(true);
-    }
+  const handleBorrowSuccess = (data) => {
+    // Refresh components to update availability
+    fetchComponents();
+    // Show success message
+    alert(`Successfully borrowed! Record ID: ${data.recordId}`);
+    setShowBorrowModal(false);
+    setSelectedComponent(null);
   };
 
   const getCategoryIcon = (category) => {
     const icons = {
-      'Microcontroller': '🔧',
-      'SBC': '💻',
-      'Sensor': '📡',
-      'Actuator': '⚙️'
+      'Microcontroller': <Icon name="wrench" size={32} />,
+      'SBC': <Icon name="laptop" size={32} />,
+      'Sensor': <Icon name="radio" size={32} />,
+      'Actuator': <Icon name="settings" size={32} />
     };
-    return icons[category] || '📦';
+    return icons[category] || <Icon name="package" size={32} />;
   };
 
   return (
@@ -194,7 +190,7 @@ const StudentView = () => {
           </div>
 
           <div className="search-bar">
-            <span className="search-icon">🔍</span>
+            <Icon name="search" size={20} className="search-icon" />
             <input
               type="text"
               placeholder="Search for components..."
@@ -215,11 +211,6 @@ const StudentView = () => {
             ))}
           </div>
 
-          {!isLoggedIn && (
-            <div className="guest-message">
-              Logged in as Guest. Borrow requires login.
-            </div>
-          )}
 
           <div className="components-grid">
             {filteredComponents.map(component => (
@@ -251,27 +242,16 @@ const StudentView = () => {
       {showBorrowModal && (
         <BorrowModal
           component={selectedComponent}
-          isLoggedIn={isLoggedIn}
           onClose={() => {
             setShowBorrowModal(false);
             setSelectedComponent(null);
           }}
-          onLoginClick={() => {
-            setShowBorrowModal(false);
-            setShowLoginModal(true);
-          }}
-        />
-      )}
-
-      {showLoginModal && (
-        <StudentLoginModal
-          onClose={() => setShowLoginModal(false)}
-          onLoginSuccess={handleLoginSuccess}
+          onBorrowSuccess={handleBorrowSuccess}
         />
       )}
 
       <button className="chat-toggle" onClick={() => setShowChatbox(!showChatbox)}>
-        💬
+        <Icon name="message-circle" size={24} />
       </button>
 
       {showChatbox && (

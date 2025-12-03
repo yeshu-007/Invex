@@ -277,3 +277,244 @@
   transform: scale(1.1);
 }
 
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  .student-view {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+    padding: 15px;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .sidebar-header {
+    gap: 8px;
+  }
+
+  .logo {
+    width: 35px;
+    height: 35px;
+  }
+
+  .logo-icon {
+    font-size: 16px;
+  }
+
+  .logo-text {
+    font-size: 18px;
+  }
+
+  .admin-login-btn {
+    padding: 10px 16px;
+    font-size: 12px;
+  }
+
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .top-bar {
+    padding: 12px 15px;
+  }
+
+  .scan-text {
+    font-size: 12px;
+  }
+
+  .content-area {
+    padding: 15px;
+  }
+
+  .welcome-section {
+    margin-bottom: 20px;
+  }
+
+  .welcome-section h1 {
+    font-size: 24px;
+    margin-bottom: 6px;
+  }
+
+  .welcome-section p {
+    font-size: 14px;
+  }
+
+  .search-bar {
+    padding: 10px 15px;
+    margin-bottom: 15px;
+  }
+
+  .search-bar input {
+    font-size: 14px;
+  }
+
+  .filter-buttons {
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .filter-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .components-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .component-card {
+    padding: 15px;
+    aspect-ratio: auto;
+    min-height: auto;
+  }
+
+  .card-icon {
+    font-size: 28px;
+    margin-bottom: 10px;
+  }
+
+  .card-title {
+    font-size: 18px;
+    margin-bottom: 6px;
+  }
+
+  .card-description {
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+
+  .card-category {
+    font-size: 11px;
+    padding: 3px 10px;
+    margin-bottom: 6px;
+  }
+
+  .tag {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+
+  .card-availability {
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+
+  .borrow-btn {
+    padding: 12px;
+    font-size: 14px;
+  }
+
+  .chat-toggle {
+    width: 50px;
+    height: 50px;
+    bottom: 20px;
+    right: 20px;
+    font-size: 20px;
+  }
+}
+
+/* Small Mobile Devices */
+@media (max-width: 480px) {
+  .sidebar {
+    padding: 12px;
+  }
+
+  .logo {
+    width: 30px;
+    height: 30px;
+  }
+
+  .logo-icon {
+    font-size: 14px;
+  }
+
+  .logo-text {
+    font-size: 16px;
+  }
+
+  .admin-login-btn {
+    padding: 8px 12px;
+    font-size: 11px;
+  }
+
+  .content-area {
+    padding: 12px;
+  }
+
+  .welcome-section h1 {
+    font-size: 20px;
+  }
+
+  .welcome-section p {
+    font-size: 13px;
+  }
+
+  .search-bar {
+    padding: 8px 12px;
+  }
+
+  .filter-btn {
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+
+  .component-card {
+    padding: 12px;
+  }
+
+  .card-title {
+    font-size: 16px;
+  }
+
+  .card-description {
+    font-size: 12px;
+  }
+
+  .chat-toggle {
+    width: 45px;
+    height: 45px;
+    bottom: 15px;
+    right: 15px;
+    font-size: 18px;
+  }
+}
+
+/* Landscape Mobile Orientation */
+@media (max-width: 768px) and (orientation: landscape) {
+  .components-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .component-card {
+    padding: 12px;
+  }
+}
+
+/* Tablet Styles */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .sidebar {
+    width: 200px;
+  }
+
+  .main-content {
+    margin-left: 200px;
+  }
+
+  .components-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+  }
+
+  .content-area {
+    padding: 25px;
+  }
+}
+

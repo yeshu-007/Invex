@@ -5,15 +5,12 @@ const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
-// All student routes require authentication
-router.use(authMiddleware);
-
 // Generate unique record ID
 function generateRecordId() {
   return 'REC-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5).toUpperCase();
 }
 
-// Borrow a component
+// Borrow a component (public route - no authentication required)
 router.post('/borrow', async (req, res) => {
   try {
     const userId = req.body.userId;
@@ -62,6 +59,9 @@ router.post('/borrow', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+// All other student routes require authentication
+router.use(authMiddleware);
 
 // Return a component
 // POST /api/student/components/:componentId/return
