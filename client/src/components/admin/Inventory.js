@@ -9,7 +9,6 @@ const Inventory = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingComponent, setEditingComponent] = useState(null);
-  const [deletingComponent, setDeletingComponent] = useState(null);
 
   useEffect(() => {
     fetchComponents();

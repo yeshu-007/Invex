@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './AddItemModal.css';
 import Icon from '../Icon';
 
@@ -20,14 +20,7 @@ const EditItemModal = ({ component, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
 
-  useEffect(() => {
-    // Fetch full component details if we only have basic info
-    if (component && component.componentId) {
-      fetchComponentDetails();
-    }
-  }, [component]);
-
-  const fetchComponentDetails = async () => {
+  const fetchComponentDetails = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:5001/api/admin/components/${component.componentId}`, {
@@ -86,7 +79,14 @@ const EditItemModal = ({ component, onClose, onSuccess }) => {
     } finally {
       setFetching(false);
     }
-  };
+  }, [component]);
+
+  useEffect(() => {
+    // Fetch full component details if we only have basic info
+    if (component && component.componentId) {
+      fetchComponentDetails();
+    }
+  }, [component, fetchComponentDetails]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
