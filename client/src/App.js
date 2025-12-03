@@ -1,11 +1,11 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import StudentView from './components/StudentView';
-import AdminLogin from './components/Admin/AdminLogin';
-import AdminLayout from './components/Admin/AdminLayout';
-import Dashboard from './components/Admin/Dashboard';
-import Inventory from './components/Admin/Inventory';
-import Procurement from './components/Admin/Procurement';
-import SmartLab from './components/Admin/SmartLab';
+import AdminLogin from './components/admin/AdminLogin';
+import AdminLayout from './components/admin/AdminLayout';
+import Dashboard from './components/admin/Dashboard';
+import Inventory from './components/admin/Inventory';
+import Procurement from './components/admin/Procurement';
+import SmartLab from './components/admin/SmartLab';
 import './App.css';
 
 const ProtectedRoute = ({ children }) => {
