@@ -3,10 +3,12 @@ import './Procurement.css';
 import Icon from '../Icon';
 import AddProcurementModal from './AddProcurementModal';
 import ProcurementDetailsModal from './ProcurementDetailsModal';
+import BulkProcurementUploadModal from './BulkProcurementUploadModal';
 import { useGetProcurementRequestsQuery } from '../../store/api/adminApi';
 
 const Procurement = () => {
   const [showAddModal, setShowAddModal] = React.useState(false);
+  const [showBulkUploadModal, setShowBulkUploadModal] = React.useState(false);
   const [selectedRequest, setSelectedRequest] = React.useState(null);
 
   // Use RTK Query hook - automatically cached!
@@ -91,10 +93,20 @@ const Procurement = () => {
           <h1 className="procurement-title">Procurement List</h1>
           <p className="procurement-subtitle">Manage component orders and requests</p>
         </div>
-        <button className="btn-primary" onClick={() => setShowAddModal(true)}>
-          <Icon name="plus" size={18} style={{ marginRight: '8px' }} />
-          New Request
-        </button>
+        <div>
+          <button
+            className="btn-secondary"
+            style={{ marginRight: '10px' }}
+            onClick={() => setShowBulkUploadModal(true)}
+          >
+            <Icon name="upload" size={18} style={{ marginRight: '8px' }} />
+            Bulk Upload CSV
+          </button>
+          <button className="btn-primary" onClick={() => setShowAddModal(true)}>
+            <Icon name="plus" size={18} style={{ marginRight: '8px' }} />
+            New Request
+          </button>
+        </div>
       </div>
 
       <div className="procurement-table-container">
@@ -185,6 +197,15 @@ const Procurement = () => {
         <ProcurementDetailsModal
           request={selectedRequest}
           onClose={() => setSelectedRequest(null)}
+        />
+      )}
+
+      {showBulkUploadModal && (
+        <BulkProcurementUploadModal
+          onClose={() => setShowBulkUploadModal(false)}
+          onSuccess={() => {
+            setShowBulkUploadModal(false);
+          }}
         />
       )}
     </div>

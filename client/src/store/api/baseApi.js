@@ -3,7 +3,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 // Base API configuration with automatic token injection
 const baseQuery = fetchBaseQuery({
   baseUrl: 'http://localhost:5001/api',
-  prepareHeaders: (headers, { getState }) => {
+  prepareHeaders: (headers) => {
     // Get token from localStorage
     const token = localStorage.getItem('token');
     
@@ -12,8 +12,10 @@ const baseQuery = fetchBaseQuery({
       headers.set('authorization', `Bearer ${token}`);
     }
     
-    // Always set content type for JSON
-    headers.set('content-type', 'application/json');
+    // RTK Query automatically handles content-type:
+    // - Sets 'application/json' for plain objects
+    // - Doesn't set it for FormData (browser handles it)
+    // So we don't need to set it manually
     
     return headers;
   },

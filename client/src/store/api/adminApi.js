@@ -111,6 +111,75 @@ export const adminApi = baseApi.injectEndpoints({
       providesTags: ['SmartLab'],
       keepUnusedDataFor: 60,
     }),
+
+    // Bulk Upload CSV - Upload and analyze CSV file
+    uploadCSV: builder.mutation({
+      query: (file) => {
+        const formData = new FormData();
+        formData.append('csvFile', file);
+        return {
+          url: '/admin/components/upload',
+          method: 'POST',
+          body: formData,
+        };
+      },
+      // Don't invalidate cache here, wait for bulk create
+    }),
+
+    // Enrich components with Gemini AI (optional step)
+    enrichComponents: builder.mutation({
+      query: (components) => ({
+        url: '/admin/components/enrich',
+        method: 'POST',
+        body: { components },
+      }),
+      // No cache tags needed here
+    }),
+
+    // Bulk Create Components - Create multiple components at once
+    bulkCreateComponents: builder.mutation({
+      query: (components) => ({
+        url: '/admin/components/bulk',
+        method: 'POST',
+        body: { components },
+      }),
+      // Invalidate components list after bulk creation
+      invalidatesTags: ['Components'],
+    }),
+
+    // ===== PROCUREMENT BULK UPLOAD / ENRICH / BULK CREATE =====
+
+    // Upload procurement CSV and extract requests
+    uploadProcurementCSV: builder.mutation({
+      query: (file) => {
+        const formData = new FormData();
+        formData.append('csvFile', file);
+        return {
+          url: '/admin/procurement/upload',
+          method: 'POST',
+          body: formData,
+        };
+      },
+    }),
+
+    // Enrich procurement requests with Gemini
+    enrichProcurementRequests: builder.mutation({
+      query: (requests) => ({
+        url: '/admin/procurement/enrich',
+        method: 'POST',
+        body: { requests },
+      }),
+    }),
+
+    // Bulk create procurement requests
+    bulkCreateProcurementRequests: builder.mutation({
+      query: (requests) => ({
+        url: '/admin/procurement/bulk',
+        method: 'POST',
+        body: { requests },
+      }),
+      invalidatesTags: ['Procurement'],
+    }),
   }),
 });
 
@@ -128,5 +197,11 @@ export const {
   useCreateProcurementRequestMutation,
   useUpdateProcurementRequestMutation,
   useGetSmartLabDataQuery,
+  useUploadCSVMutation,
+  useEnrichComponentsMutation,
+  useBulkCreateComponentsMutation,
+  useUploadProcurementCSVMutation,
+  useEnrichProcurementRequestsMutation,
+  useBulkCreateProcurementRequestsMutation,
 } = adminApi;
 

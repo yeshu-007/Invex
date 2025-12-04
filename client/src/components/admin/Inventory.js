@@ -3,6 +3,7 @@ import './Inventory.css';
 import Icon from '../Icon';
 import AddItemModal from './AddItemModal';
 import EditItemModal from './EditItemModal';
+import BulkUploadModal from './BulkUploadModal';
 import { 
   useGetComponentsQuery, 
   useDeleteComponentMutation 
@@ -11,6 +12,7 @@ import {
 const Inventory = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
   const [editingComponent, setEditingComponent] = useState(null);
 
   // RTK Query hook - automatically caches and manages loading/error states
@@ -125,7 +127,7 @@ const Inventory = () => {
           />
         </div>
         <div className="toolbar-actions">
-          <button className="btn-secondary">
+          <button className="btn-secondary" onClick={() => setShowBulkUploadModal(true)}>
             <Icon name="upload" size={18} style={{ marginRight: '8px' }} />
             Bulk Upload CSV
           </button>
@@ -223,6 +225,16 @@ const Inventory = () => {
           onSuccess={(data) => {
             // Cache is automatically invalidated by the mutation, no need to refetch
             setEditingComponent(null);
+          }}
+        />
+      )}
+
+      {showBulkUploadModal && (
+        <BulkUploadModal
+          onClose={() => setShowBulkUploadModal(false)}
+          onSuccess={(data) => {
+            // Cache is automatically invalidated by the mutation, no need to refetch
+            setShowBulkUploadModal(false);
           }}
         />
       )}
