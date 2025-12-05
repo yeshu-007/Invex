@@ -1,7 +1,9 @@
 const express = require('express');
+const multer = require('multer');
 const Component = require('../models/Component');
 const BorrowingRecord = require('../models/BorrowingRecord');
 const { authMiddleware } = require('../middleware/auth');
+const { identifyComponentFromImage } = require('../services/imageRecognitionService');
 
 const router = express.Router();
 
@@ -9,6 +11,22 @@ const router = express.Router();
 function generateRecordId() {
   return 'REC-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5).toUpperCase();
 }
+
+// Configure multer for image uploads (store in memory)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit for images
+  },
+  fileFilter: (req, file, cb) => {
+    // Only accept image files
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  }
+});
 
 // Borrow a component (public route - no authentication required)
 router.post('/borrow', async (req, res) => {
@@ -57,6 +75,67 @@ router.post('/borrow', async (req, res) => {
   } catch (error) {
     console.error('Borrow error:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Identify component from image using Gemini Vision (public route - no authentication required)
+// POST /api/student/components/identify
+router.post('/components/identify', upload.single('image'), async (req, res) => {
+  try {
+    // Check if file was uploaded
+    if (!req.file) {
+      return res.status(400).json({ message: 'No image file uploaded' });
+    }
+
+    // Get all components from database for matching (don't filter by availability - match all components)
+    const allComponents = await Component.find({})
+      .select('componentId name category description tags availableQuantity totalQuantity')
+      .lean(); // Use .lean() to get plain JavaScript objects instead of Mongoose documents
+
+    if (allComponents.length === 0) {
+      return res.status(404).json({ message: 'No components found in database' });
+    }
+
+    console.log(`Found ${allComponents.length} components in database for matching`);
+
+    // Identify component from image
+    console.log('Identifying component from image...');
+    const matchedComponents = await identifyComponentFromImage(
+      req.file.buffer,
+      req.file.mimetype,
+      allComponents
+    );
+
+    if (matchedComponents.length === 0) {
+      return res.json({
+        success: true,
+        message: 'Could not identify component from image. Please try a clearer photo or search manually.',
+        matches: []
+      });
+    }
+
+    // Sort matches: available components first, then by confidence
+    const sortedMatches = matchedComponents.sort((a, b) => {
+      // First sort by availability (available first)
+      if (a.availableQuantity > 0 && b.availableQuantity === 0) return -1;
+      if (a.availableQuantity === 0 && b.availableQuantity > 0) return 1;
+      // Then sort by confidence (higher first)
+      return (b.matchConfidence || 0) - (a.matchConfidence || 0);
+    });
+
+    // Return matched components
+    res.json({
+      success: true,
+      message: `Found ${sortedMatches.length} potential match(es)`,
+      matches: sortedMatches
+    });
+
+  } catch (error) {
+    console.error('Identify component error:', error);
+    res.status(500).json({ 
+      message: error.message || 'Failed to identify component from image',
+      error: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
@@ -129,19 +208,6 @@ router.get('/components', async (req, res) => {
     res.json(components || []);
   } catch (error) {
     console.error('Search error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Upload image for Gemini identification (placeholder)
-// GET /api/student/components/identify
-router.get('/components/identify', async (req, res) => {
-  try {
-    // This would integrate with Google Gemini API
-    // For now, return empty response per API contract
-    res.status(200).json({});
-  } catch (error) {
-    console.error('Identify component error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

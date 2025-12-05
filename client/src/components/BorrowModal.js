@@ -27,25 +27,46 @@ const BorrowModal = ({ component, onClose, onBorrowSuccess }) => {
       return;
     }
 
+    // Get componentId from component (could be _id or componentId)
+    const componentId = component?.componentId || component?._id;
+    
+    console.log('Borrow attempt - Component:', component);
+    console.log('Borrow attempt - ComponentId:', componentId);
+    console.log('Borrow attempt - StudentId:', studentId.trim());
+    
+    if (!componentId) {
+      console.error('Component data:', component);
+      setError('Component ID is missing. Please try selecting the component again.');
+      return;
+    }
+
+    // Automatically calculate expected return date (15 days from today)
+    const expectedReturnDate = getExpectedReturnDate();
+    console.log('Borrow attempt - ExpectedReturnDate:', expectedReturnDate);
+
+    if (!expectedReturnDate) {
+      setError('Failed to calculate expected return date');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // Get componentId from component (could be _id or componentId)
-      const componentId = component.componentId || component._id;
-      // Automatically calculate expected return date (15 days from today)
-      const expectedReturnDate = getExpectedReturnDate();
-
+      const borrowData = {
+        userId: studentId.trim(),
+        componentId: componentId,
+        quantity: quantity,
+        expectedReturnDate: expectedReturnDate
+      };
+      
+      console.log('Sending borrow request:', borrowData);
+      
       const response = await fetch('http://localhost:5001/api/student/borrow', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          userId: studentId.trim(),
-          componentId: componentId,
-          quantity: quantity,
-          expectedReturnDate: expectedReturnDate
-        })
+        body: JSON.stringify(borrowData)
       });
 
       const data = await response.json();

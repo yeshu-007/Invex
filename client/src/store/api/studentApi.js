@@ -26,6 +26,19 @@ export const studentApi = baseApi.injectEndpoints({
       providesTags: ['BorrowingRecords'],
       keepUnusedDataFor: 30,
     }),
+
+    // Identify component from image
+    identifyComponentFromImage: builder.mutation({
+      query: (imageFile) => {
+        const formData = new FormData();
+        formData.append('image', imageFile);
+        return {
+          url: '/student/components/identify',
+          method: 'POST',
+          body: formData,
+        };
+      },
+    }),
   }),
 });
 
@@ -33,5 +46,6 @@ export const {
   useGetStudentComponentsQuery,
   useBorrowComponentMutation,
   useGetStudentBorrowingHistoryQuery,
+  useIdentifyComponentFromImageMutation,
 } = studentApi;
 

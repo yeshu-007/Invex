@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './StudentView.css';
 import BorrowModal from './BorrowModal';
+import ImageScanModal from './ImageScanModal';
 import Chatbox from './Chatbox';
 import Icon from './Icon';
 
@@ -10,6 +11,7 @@ const StudentView = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
   const [showBorrowModal, setShowBorrowModal] = useState(false);
+  const [showImageScanModal, setShowImageScanModal] = useState(false);
   const [selectedComponent, setSelectedComponent] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
@@ -143,6 +145,12 @@ const StudentView = () => {
     setShowBorrowModal(true);
   };
 
+  const handleComponentFromScan = (component) => {
+    // Component selected from image scan, open borrow modal
+    setSelectedComponent(component);
+    setShowBorrowModal(true);
+  };
+
   const handleBorrowSuccess = (data) => {
     // Refresh components to update availability
     fetchComponents();
@@ -197,6 +205,13 @@ const StudentView = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
+            <button
+              className="scan-button"
+              onClick={() => setShowImageScanModal(true)}
+              title="Scan component with camera"
+            >
+              <Icon name="camera" size={20} />
+            </button>
           </div>
 
           <div className="filter-buttons">
@@ -247,6 +262,13 @@ const StudentView = () => {
             setSelectedComponent(null);
           }}
           onBorrowSuccess={handleBorrowSuccess}
+        />
+      )}
+
+      {showImageScanModal && (
+        <ImageScanModal
+          onClose={() => setShowImageScanModal(false)}
+          onComponentSelect={handleComponentFromScan}
         />
       )}
 
