@@ -41,8 +41,8 @@ const borrowingRecordSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['borrowed', 'returned', 'overdue'],
-    default: 'borrowed'
+    enum: ['pending', 'borrowed', 'returned', 'overdue', 'rejected'],
+    default: 'pending'
   },
   remarks: {
     type: String,

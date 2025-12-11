@@ -28,7 +28,8 @@ const upload = multer({
   }
 });
 
-// Borrow a component (public route - no authentication required)
+// Request to borrow a component (public route - no authentication required)
+// Creates a pending request that needs admin approval
 router.post('/borrow', async (req, res) => {
   try {
     const userId = req.body.userId;
@@ -51,7 +52,7 @@ router.post('/borrow', async (req, res) => {
       return res.status(400).json({ message: 'Not enough quantity available' });
     }
 
-    // Create borrowing record
+    // Create borrowing record with pending status (waiting for admin approval)
     const record = new BorrowingRecord({
       recordId: generateRecordId(),
       userId: userId,
@@ -59,21 +60,20 @@ router.post('/borrow', async (req, res) => {
       componentName: component.name,
       quantity: quantity,
       expectedReturnDate: new Date(expectedReturnDate),
-      status: 'borrowed'
+      status: 'pending' // Changed to pending - requires admin approval
     });
 
     await record.save();
 
-    // Update component available quantity
-    component.availableQuantity -= quantity;
-    await component.save();
+    // Don't update component quantity yet - wait for admin approval
 
     res.json({
       recordId: record.recordId,
-      status: 'borrowed'
+      status: 'pending',
+      message: 'Borrowing request submitted. Waiting for admin approval.'
     });
   } catch (error) {
-    console.error('Borrow error:', error);
+    console.error('Borrow request error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

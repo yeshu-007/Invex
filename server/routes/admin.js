@@ -183,10 +183,87 @@ router.delete('/components/:componentId', async (req, res) => {
 // GET /api/admin/borrowing-records
 router.get('/borrowing-records', async (req, res) => {
   try {
-    const records = await BorrowingRecord.find().sort({ borrowDate: -1 });
+    const records = await BorrowingRecord.find().sort({ createdAt: -1 });
     res.json(records);
   } catch (error) {
     console.error('Get borrowing records error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Approve a borrowing request
+// PUT /api/admin/borrowing-records/:recordId/approve
+router.put('/borrowing-records/:recordId/approve', async (req, res) => {
+  try {
+    const recordId = req.params.recordId;
+    const record = await BorrowingRecord.findOne({ recordId: recordId });
+
+    if (!record) {
+      return res.status(404).json({ message: 'Borrowing record not found' });
+    }
+
+    if (record.status !== 'pending') {
+      return res.status(400).json({ message: 'Only pending requests can be approved' });
+    }
+
+    // Find component
+    const component = await Component.findOne({ componentId: record.componentId });
+    if (!component) {
+      return res.status(404).json({ message: 'Component not found' });
+    }
+
+    // Check if enough quantity available
+    if (component.availableQuantity < record.quantity) {
+      return res.status(400).json({ message: 'Not enough quantity available' });
+    }
+
+    // Update record status to borrowed
+    record.status = 'borrowed';
+    record.borrowDate = new Date();
+    await record.save();
+
+    // Update component available quantity
+    component.availableQuantity -= record.quantity;
+    await component.save();
+
+    res.json({
+      recordId: record.recordId,
+      status: 'borrowed',
+      message: 'Borrowing request approved'
+    });
+  } catch (error) {
+    console.error('Approve borrowing request error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Reject a borrowing request
+// PUT /api/admin/borrowing-records/:recordId/reject
+router.put('/borrowing-records/:recordId/reject', async (req, res) => {
+  try {
+    const recordId = req.params.recordId;
+    const record = await BorrowingRecord.findOne({ recordId: recordId });
+
+    if (!record) {
+      return res.status(404).json({ message: 'Borrowing record not found' });
+    }
+
+    if (record.status !== 'pending') {
+      return res.status(400).json({ message: 'Only pending requests can be rejected' });
+    }
+
+    // Update record status to rejected
+    record.status = 'rejected';
+    record.remarks = req.body.remarks || record.remarks || 'Request rejected by admin';
+    await record.save();
+
+    res.json({
+      recordId: record.recordId,
+      status: 'rejected',
+      message: 'Borrowing request rejected'
+    });
+  } catch (error) {
+    console.error('Reject borrowing request error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

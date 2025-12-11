@@ -58,6 +58,23 @@ export const adminApi = baseApi.injectEndpoints({
       keepUnusedDataFor: 30, // Shorter cache for frequently changing data
     }),
 
+    approveBorrowingRequest: builder.mutation({
+      query: (recordId) => ({
+        url: `/admin/borrowing-records/${recordId}/approve`,
+        method: 'PUT',
+      }),
+      invalidatesTags: ['BorrowingRecords', 'Components', 'Dashboard'],
+    }),
+
+    rejectBorrowingRequest: builder.mutation({
+      query: ({ recordId, remarks }) => ({
+        url: `/admin/borrowing-records/${recordId}/reject`,
+        method: 'PUT',
+        body: { remarks },
+      }),
+      invalidatesTags: ['BorrowingRecords', 'Dashboard'],
+    }),
+
     // Dashboard API - combines multiple queries
     getDashboardData: builder.query({
       query: () => ({
@@ -191,6 +208,8 @@ export const {
   useUpdateComponentMutation,
   useDeleteComponentMutation,
   useGetBorrowingRecordsQuery,
+  useApproveBorrowingRequestMutation,
+  useRejectBorrowingRequestMutation,
   useGetDashboardDataQuery,
   useGetProcurementRequestsQuery,
   useGetProcurementRequestByIdQuery,

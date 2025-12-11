@@ -152,10 +152,9 @@ const StudentView = () => {
   };
 
   const handleBorrowSuccess = (data) => {
-    // Refresh components to update availability
+    // Refresh components to update availability (though it won't change until approved)
     fetchComponents();
-    // Show success message
-    alert(`Successfully borrowed! Record ID: ${data.recordId}`);
+    // Success message is shown in BorrowModal
     setShowBorrowModal(false);
     setSelectedComponent(null);
   };

@@ -76,9 +76,10 @@ const BorrowModal = ({ component, onClose, onBorrowSuccess }) => {
         if (onBorrowSuccess) {
           onBorrowSuccess(data);
         }
+        alert('Borrowing request submitted successfully! Waiting for admin approval.');
         onClose();
       } else {
-        setError(data.message || 'Failed to borrow component. Please try again.');
+        setError(data.message || 'Failed to submit borrowing request. Please try again.');
       }
     } catch (err) {
       console.error('Borrow error:', err);
@@ -92,9 +93,12 @@ const BorrowModal = ({ component, onClose, onBorrowSuccess }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <button className="modal-close" onClick={onClose}>×</button>
-        <h2 className="modal-title">Borrow Component</h2>
+        <h2 className="modal-title">Request to Borrow Component</h2>
         <p className="modal-text">
-          You're trying to borrow: <strong>{component.name}</strong>
+          You're requesting to borrow: <strong>{component.name}</strong>
+        </p>
+        <p className="modal-text" style={{ fontSize: '13px', color: '#667eea', marginTop: '5px', fontStyle: 'italic' }}>
+          Your request will be sent to admin for approval
         </p>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -135,7 +139,7 @@ const BorrowModal = ({ component, onClose, onBorrowSuccess }) => {
               Cancel
             </button>
             <button type="submit" className="btn-confirm" disabled={loading}>
-              {loading ? 'Borrowing...' : 'Confirm Borrow'}
+              {loading ? 'Submitting Request...' : 'Request Borrow'}
             </button>
           </div>
         </form>

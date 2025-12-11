@@ -5,6 +5,7 @@ import AdminLayout from './components/admin/AdminLayout';
 import Dashboard from './components/admin/Dashboard';
 import Inventory from './components/admin/Inventory';
 import Procurement from './components/admin/Procurement';
+import BorrowingRecords from './components/admin/BorrowingRecords';
 import SmartLab from './components/admin/SmartLab';
 import './App.css';
 
@@ -56,6 +57,16 @@ function App() {
             <ProtectedRoute>
               <AdminLayout>
                 <Procurement />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/borrowing-records"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <BorrowingRecords />
               </AdminLayout>
             </ProtectedRoute>
           }
